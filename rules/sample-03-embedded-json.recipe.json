@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "2.0",
+  "format": "zhencangx.recipe",
+  "meta": {
+    "id": "demo.embedded-json",
+    "name": "示例③ 嵌入 JSON（jsonParse + 通配符 + 下载头）",
+    "author": "帧藏X 官方示例",
+    "version": "1.0.0",
+    "description": "小红书式配方：页面 HTML 内嵌 JSON（window.__INITIAL_STATE__）→ 正则截取 → jsonParse 解析 → JSONPath 动态键通配取直链 → output.media 携带 Referer 防盗链头。"
+  },
+  "matcher": {
+    "hosts": ["www.demo-note.com", "xhslink.demo-note.com"],
+    "urlPatterns": ["www\\.demo-note\\.com/(explore|discovery/item)/\\w+", "xhslink\\.demo-note\\.com/\\w+"],
+    "priority": 10
+  },
+  "capabilities": ["network", "json_parse", "media_resolve", "html_parse", "redirect"],
+  "steps": [
+    {
+      "kind": "http.request",
+      "method": "GET",
+      "url": "$input.url",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15"
+      },
+      "timeoutMs": 15000,
+      "followRedirects": true
+    },
+    {
+      "kind": "extract.regex",
+      "input": "$step.0",
+      "pattern": "window\\.__INITIAL_STATE__\\s*=\\s*(\\{.+?\\})\\s*</script>",
+      "group": 1,
+      "all": false
+    },
+    {
+      "kind": "extract.jsonParse",
+      "input": "$step.1"
+    },
+    {
+      "kind": "extract.jsonPath",
+      "input": "$step.2",
+      "path": "$.note.noteDetailMap.*.note.video.media.stream.h264[0].masterUrl"
+    },
+    {
+      "kind": "collection.first",
+      "input": "$step.3"
+    },
+    {
+      "kind": "output.media",
+      "url": "$step.4",
+      "mimeType": "video/mp4",
+      "extension": "mp4",
+      "headers": {
+        "Referer": "https://www.demo-note.com/",
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"
+      }
+    },
+    {
+      "kind": "extract.jsonPath",
+      "input": "$step.2",
+      "path": "$.note.noteDetailMap.*.note.title"
+    },
+    {
+      "kind": "collection.first",
+      "input": "$step.6"
+    },
+    {
+      "kind": "output.metadata",
+      "key": "title",
+      "value": "$step.7"
+    }
+  ]
+}

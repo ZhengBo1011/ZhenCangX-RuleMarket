@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0",
+  "moduleId": "user.demo.full-package",
+  "moduleVersion": "1.0.0",
+  "name": "完整规则包模板（改这里）",
+  "description": "manifest + rules/ 目录形态的完整规则包模板：把 moduleId 换成你自己的（小写字母/. /-/_，不得用 official. 前缀）、规则正文换成你的 Recipe 2.0 文档。开发说明见 RULE_GUIDE.md。",
+  "author": "你的名字",
+  "source": "LOCAL_IMPORT",
+  "license": "MIT",
+  "homepage": "",
+  "supportedPlatforms": [
+    "generic.demo-live.com"
+  ],
+  "entryRules": [
+    "demo.live.rooms"
+  ],
+  "capabilities": [
+    "network",
+    "json_parse",
+    "media_resolve"
+  ],
+  "credentialProfiles": [],
+  "implementation": "declarative",
+  "priority": 5
+}

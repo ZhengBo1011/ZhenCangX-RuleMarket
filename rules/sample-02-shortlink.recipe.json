@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "2.0",
+  "format": "zhencangx.recipe",
+  "meta": {
+    "id": "demo.shortlink-resolve",
+    "name": "示例② 短链展开（http.resolve + 模板拼接）",
+    "author": "帧藏X 官方示例",
+    "version": "1.0.0",
+    "description": "抖音式配方的前半段：分享短链 302 展开取内容 ID，再用模板串拼接接口地址。http.resolve 产出最终生效 URL（$step.N 即该 URL）。"
+  },
+  "matcher": {
+    "hosts": ["v.demo-short.com"],
+    "urlPatterns": ["v\\.demo-short\\.com/\\w+"],
+    "priority": 10
+  },
+  "capabilities": ["network", "json_parse", "media_resolve", "redirect"],
+  "steps": [
+    {
+      "kind": "http.resolve",
+      "url": "$input.url",
+      "timeoutMs": 10000
+    },
+    {
+      "kind": "extract.regex",
+      "input": "$step.0",
+      "pattern": "/share/(?:video|note)/(\\d+)",
+      "group": 1,
+      "all": false
+    },
+    {
+      "kind": "variable.set",
+      "name": "itemId",
+      "value": "$step.1"
+    },
+    {
+      "kind": "http.request",
+      "method": "GET",
+      "url": "https://api.demo-short.com/web/item/detail/?item_ids=${var.itemId}",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15"
+      },
+      "timeoutMs": 10000,
+      "followRedirects": true
+    },
+    {
+      "kind": "extract.jsonPath",
+      "input": "$step.3",
+      "path": "$.item_list[0].video.play_addr.url_list[0]"
+    },
+    {
+      "kind": "transform.replace",
+      "input": "$step.4",
+      "search": "playwm",
+      "replacement": "play"
+    },
+    {
+      "kind": "output.media",
+      "url": "$step.5",
+      "mimeType": "video/mp4",
+      "extension": "mp4",
+      "title": "$var.itemId"
+    }
+  ]
+}

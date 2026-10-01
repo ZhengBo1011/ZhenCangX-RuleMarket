@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "2.0",
+  "format": "zhencangx.recipe",
+  "meta": {
+    "id": "cc.xiaohongshu.video",
+    "name": "小红书视频笔记解析",
+    "author": "帧藏X 官方规则",
+    "version": "1.1.0",
+    "description": "支持分享短链（xhslink.cn / xhslink.com）与网页直链，可直接粘贴完整分享文案（自动提取链接）。跟随 302 取落地页，从页面内嵌 __INITIAL_STATE__ 提取视频直链、作者与发布时间，并携带防盗链头下载。仅覆盖视频笔记（图文/直播暂不支持，会如实上报）；小红书页面结构或反爬策略变更后本规则可能需更新。"
+  },
+  "matcher": {
+    "hosts": ["xhslink.cn", "xhslink.com", "www.xiaohongshu.com", "xiaohongshu.com"],
+    "urlPatterns": [
+      "xhslink\\.(?:cn|com)/",
+      "www\\.xiaohongshu\\.com/(?:explore|discovery/item)/[\\da-f]+"
+    ],
+    "priority": 20
+  },
+  "capabilities": ["network", "json_parse", "media_resolve", "redirect"],
+  "variables": [
+    {
+      "name": "ua",
+      "value": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+    }
+  ],
+  "steps": [
+    {
+      "kind": "http.request",
+      "method": "GET",
+      "url": "$input.url",
+      "headers": {
+        "User-Agent": "$var.ua",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9"
+      },
+      "timeoutMs": 15000,
+      "followRedirects": true
+    },
+    {
+      "kind": "extract.regex",
+      "input": "$step.0",
+      "pattern": "window\\.__INITIAL_STATE__\\s*=\\s*(\\{[\\s\\S]*?\\})\\s*</script>",
+      "group": 1,
+      "all": false
+    },
+    { "kind": "extract.jsonParse", "input": "$step.1" },
+    {
+      "kind": "extract.jsonPath",
+      "input": "$step.2",
+      "path": "$.noteData.data.noteData.video.media.stream.h264[0].masterUrl"
+    },
+    {
+      "kind": "extract.jsonPath",
+      "input": "$step.2",
+      "path": "$.noteData.data.noteData.title"
+    },
+    {
+      "kind": "extract.jsonPath",
+      "input": "$step.2",
+      "path": "$.noteData.data.noteData.user.nickName"
+    },
+    {
+      "kind": "extract.jsonPath",
+      "input": "$step.2",
+      "path": "$.noteData.data.noteData.time"
+    },
+    {
+      "kind": "extract.jsonPath",
+      "input": "$step.2",
+      "path": "$.noteData.data.noteData.type"
+    },
+    { "kind": "condition.equals", "left": "$step.7", "right": "video" },
+    {
+      "kind": "control.branch",
+      "condition": "$step.8",
+      "then": [
+        {
+          "kind": "output.media",
+          "url": "$step.3",
+          "mimeType": "video/mp4",
+          "extension": "mp4",
+          "headers": {
+            "Referer": "https://www.xiaohongshu.com/",
+            "User-Agent": "$var.ua"
+          }
+        },
+        { "kind": "output.metadata", "key": "title", "value": "$step.4" },
+        { "kind": "output.metadata", "key": "author", "value": "$step.5" },
+        { "kind": "output.metadata", "key": "publishAt", "value": "$step.6" }
+      ],
+      "else": [
+        {
+          "kind": "restricted.mark",
+          "reason": "content_type_unsupported",
+          "message": "该笔记不是视频内容，当前规则仅支持视频笔记（图文/直播暂不支持提取）"
+        }
+      ]
+    }
+  ]
+}

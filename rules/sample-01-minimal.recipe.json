@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "2.0",
+  "format": "zhencangx.recipe",
+  "meta": {
+    "id": "demo.minimal.json-api",
+    "name": "示例① 最小规则（API + JSONPath）",
+    "author": "帧藏X 官方示例",
+    "version": "1.0.0",
+    "description": "最小可用的单文件规则：匹配 → GET 接口 → JSONPath 取直链 → 产出媒体。把 matcher.hosts 与接口地址换成你的目标平台即可开始开发。"
+  },
+  "matcher": {
+    "hosts": ["demo.example-video.com"],
+    "urlPatterns": ["demo\\.example-video\\.com/(video|play)/\\w+"],
+    "priority": 10
+  },
+  "capabilities": ["network", "json_parse", "media_resolve"],
+  "steps": [
+    {
+      "kind": "extract.regex",
+      "input": "$input.url",
+      "pattern": "(?:video|play)/(\\w+)",
+      "group": 1,
+      "all": false
+    },
+    {
+      "kind": "variable.set",
+      "name": "videoId",
+      "value": "$step.0"
+    },
+    {
+      "kind": "http.request",
+      "method": "GET",
+      "url": "https://api.example-video.com/v1/video/detail?id=${var.videoId}",
+      "headers": {
+        "User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36",
+        "Referer": "https://demo.example-video.com/"
+      },
+      "timeoutMs": 10000,
+      "followRedirects": true
+    },
+    {
+      "kind": "extract.jsonPath",
+      "input": "$step.2",
+      "path": "$.data.video.playUrl"
+    },
+    {
+      "kind": "output.media",
+      "url": "$step.3",
+      "mimeType": "video/mp4",
+      "extension": "mp4",
+      "title": "$var.videoId"
+    },
+    {
+      "kind": "output.metadata",
+      "key": "title",
+      "value": "$var.videoId"
+    }
+  ]
+}

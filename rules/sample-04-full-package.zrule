@@ -1,0 +1,22 @@
+{
+  "manifest": {
+    "schemaVersion": "1.0",
+    "moduleId": "user.demo.full-package",
+    "moduleVersion": "1.0.0",
+    "name": "示例④ 完整规则模块包",
+    "description": "manifest + 多规则 + 声明式函数 + 有界循环 + 自由文本受限上报的完整模块包样例，展示可回滚、可启停的正规开发形态。",
+    "author": "帧藏X 官方示例",
+    "source": "LOCAL_IMPORT",
+    "license": "MIT",
+    "homepage": "",
+    "supportedPlatforms": ["generic.demo-live.com"],
+    "entryRules": ["demo.live.rooms"],
+    "capabilities": ["network", "json_parse", "media_resolve"],
+    "credentialProfiles": [],
+    "implementation": "declarative",
+    "priority": 5
+  },
+  "rules": [
+    "{\"schemaVersion\":\"2.0\",\"format\":\"zhencangx.recipe\",\"meta\":{\"id\":\"demo.live.rooms\",\"name\":\"直播间流提取（函数+循环）\",\"author\":\"帧藏X 官方示例\",\"version\":\"1.0.0\",\"description\":\"用声明式函数挑选最优流，用有界循环遍历候选线路；演示 functions / foreach / output.media headers 的组合。\"},\"matcher\":{\"hosts\":[\"live.demo-live.com\"],\"urlPatterns\":[\"live\\\\.demo-live\\\\.com/(room|u)/\\\\w+\"],\"priority\":10},\"capabilities\":[\"network\",\"json_parse\",\"media_resolve\"],\"functions\":[{\"name\":\"bestStream\",\"params\":[\"list\"],\"steps\":[{\"kind\":\"collection.unique\",\"input\":\"$arg.0\"},{\"kind\":\"collection.first\",\"input\":\"$step.0\"},{\"kind\":\"function.return\",\"value\":\"$step.1\"}]}],\"steps\":[{\"kind\":\"extract.regex\",\"input\":\"$input.url\",\"pattern\":\"(?:room|u)/(\\\\w+)\",\"group\":1,\"all\":false},{\"kind\":\"variable.set\",\"name\":\"roomId\",\"value\":\"$step.0\"},{\"kind\":\"http.request\",\"method\":\"GET\",\"url\":\"https://api.demo-live.com/room/streams?id=${var.roomId}\",\"headers\":{\"User-Agent\":\"Mozilla/5.0 (Linux; Android 14)\"},\"timeoutMs\":10000,\"followRedirects\":true},{\"kind\":\"extract.jsonPath\",\"input\":\"$step.2\",\"path\":\"$.data.lines[*].url\"},{\"kind\":\"function.call\",\"name\":\"bestStream\",\"args\":[\"$step.3\"]},{\"kind\":\"output.media\",\"url\":\"$step.4\",\"mimeType\":\"video/mp4\",\"extension\":\"flv\",\"headers\":{\"Referer\":\"https://live.demo-live.com/\"}},{\"kind\":\"extract.jsonPath\",\"input\":\"$step.2\",\"path\":\"$.data.status\"},{\"kind\":\"collection.first\",\"input\":\"$step.6\"},{\"kind\":\"control.branch\",\"condition\":\"$step.7\",\"then\":[{\"kind\":\"condition.equals\",\"left\":\"$step.7\",\"right\":\"closed\"}],\"else\":[{\"kind\":\"variable.set\",\"name\":\"noop\",\"value\":\"1\"}]},{\"kind\":\"control.branch\",\"condition\":\"$step.8\",\"then\":[{\"kind\":\"restricted.mark\",\"reason\":\"直播已结束，无法回放\",\"message\":\"该房间已下播，规则如实上报：无法获取媒体\"}],\"else\":[{\"kind\":\"variable.set\",\"name\":\"keep\",\"value\":\"1\"}]}]}"
+  ]
+}
