@@ -24,10 +24,7 @@
 | 规则 | 说明 | 导入链接（raw） | 更新日期 |
 |------|------|----------------|---------|
 | 小红书视频笔记解析 | 分享短链 `xhslink.cn` / 网页直链均可；提取直链、作者、发布时间，携带防盗链头下载；仅视频笔记 | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/xiaohongshu.recipe.json` | 2026-10-01 |
-| 示例① 最小规则 | 单文件规则骨架：正则取 ID → GET 接口 → JSONPath 取直链 | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/sample-01-minimal.recipe.json` | 2026-10-01 |
-| 示例② 短链展开 | `http.resolve` 重定向展开 + `${var.xxx}` 模板拼接 + 去水印替换 | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/sample-02-shortlink.recipe.json` | 2026-10-01 |
-| 示例③ 嵌入 JSON | `jsonParse` 解析页面内嵌 JSON + `.*` 动态键通配 + 下载 Referer 头 | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/sample-03-embedded-json.recipe.json` | 2026-10-01 |
-| 示例④ 完整模块包 | `.zrule` 信封：manifest + 声明式函数 + 有界循环 + 受限上报 | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/sample-04-full-package.zrule` | 2026-10-01 |
+
 
 ### 第三方 · 可直接导入
 
