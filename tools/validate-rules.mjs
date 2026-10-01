@@ -329,6 +329,13 @@ function checkRule(file, doc) {
 
   checkAuth(file, doc.auth);
 
+  // 声明了 auth 但没写 auth.check：运行期用户未配置凭据时会被引擎执行前拦下，
+  // 用户只看到一句"凭据为空"。加一步 auth.check 才能给出可操作的提示。
+  if (doc.auth !== undefined && !kinds.includes('auth.check')) {
+    warn(file, '声明了 auth 但没有 auth.check 步骤：用户未配置凭据时会被引擎前置拦下'
+      + '（只报"凭据为空"）。建议加 auth.check + 分支，给出"去哪配置"的提示');
+  }
+
   // 本机/内网地址必须在描述里告知用户需要开授权
   const privateUrls = urls.filter((u) => /^https?:\/\/(127\.|localhost|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[::1\])/i.test(u));
   if (privateUrls.length > 0) {

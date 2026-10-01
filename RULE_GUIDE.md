@@ -231,6 +231,33 @@ URL 与 headers 支持引用与模板插值；**请求体不支持**（写进去
 > 把签名交给服务，规则只负责调接口（见 `rules/douyin.recipe.json`）。
 > 应用内「示例⑥ Cookie 登录型规则」演示了本节的写法。
 
+### 用户还没配置凭据时，别让整条规则死掉：`auth.check`
+
+**只声明 `auth` 的规则，在用户还没填凭据时会被引擎在执行前拦下**（`CREDENTIAL_UNAVAILABLE`），
+规则自己完全没机会解释 —— 用户只会看到一句"凭据为空，规则无法执行"。
+要自己处理这种情况，就在步骤里加一步 `auth.check`：
+
+```jsonc
+{ "kind": "auth.check", "profile": "douyin-service" },   // profile 可省略，默认用 auth.profile
+{ "kind": "condition.exists", "left": "$step.0" },
+{ "kind": "control.branch", "condition": "$step.1",
+  "then": [ /* 凭据已配置：正常解析 */ ],
+  "else": [
+    { "kind": "restricted.mark", "reason": "需要先配置凭据",
+      "message": "本规则需要解析服务 API Key：请到 规则中心 → 本模块 → 凭据授权 填写并授权；不想用第三方服务就改装本机服务版规则。" }
+  ] }
+```
+
+- 产出 `true`（已配置）或空串（未配置）；**不返回凭据值**（规则依然读不到凭据，只拿到一个布尔事实）；
+- 规则里出现 `auth.check` ⇒ 引擎**不再前置拦下**，把裁决权交回规则（IR 里 `authCheckOptional=true`）；
+  这不放松任何权限：凭据注入仍要求用户授权 + 目标主机在 `hosts` 内；
+- 需要 `auth_reference` 能力；`profile` 可省略，由 `auth.profile` 兜底（两者都没有会编译期报错）；
+- **不写 `auth.check` 的规则仍会被拦下**：此时引擎文案会带上规则的中文 `label` 并指路
+  「规则中心 → 该模块 → 凭据授权」，但**不如你自己写的 message 具体**，所以推荐写上。
+
+> 真实范例：`rules/douyin.recipe.json` v1.1.0 用 `auth.check` 把"还没配 Key"变成一段
+> 有出路的说明（配 Key / 改用本机服务版 / 用降级说明规则），而不是一句干巴巴的失败。
+
 ---
 
 ## 四、注意事项（**收录本市场的要素要求**，不满足不予收录）
