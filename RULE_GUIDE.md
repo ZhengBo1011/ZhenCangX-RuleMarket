@@ -11,14 +11,15 @@
 
 一条规则 = `matcher`（匹配哪些链接）+ `steps`（解析步骤流水线）+ `capabilities`（能力声明）。
 
-改三处即可运行：
+改四处即可运行：
 
 ```jsonc
-"matcher": { "hosts": ["目标站点.com"], "urlPatterns": ["目标站点\\.com/v/\\w+"] },
+"matcher": { "hosts": ["目标站点.com"], "urlPatterns": ["目标站点\\.com/v/\\w+"] },  // ① 换站点
 "steps": [
   { "kind": "http.request", "url": "https://接口地址/?id=..." },   // ② 换接口
-  { "kind": "extract.jsonPath", "path": "$.data.video.playUrl" },  // ③ 换字段路径
-  { "kind": "output.media", "url": "$step.N" }
+  { "kind": "extract.jsonPath", "path": "$.data.video.playUrl" },  // ③ 换直链字段路径
+  // ④ 换「发布者」「上传时间」两个字段路径（模板已内置 author / publishAt 两个
+  //    output.metadata 输出 —— 值会展示在媒体库，缺了这两步媒体库就缺发布者和日期）
 ]
 ```
 
@@ -59,7 +60,11 @@
   必须能通过帧藏X 导入校验链（清单 → 编译 → 安装），提交时附**成功导入与调试台命中的截图或描述**。
 - **`meta.id` 全局唯一**：建议 `你的域.站点.用途` 形式（如 `com.alice.douyin`），不得与已有规则冲突。
 - **`version`/`moduleVersion` 为三段数字**（`1.0.0`），**内容变更必须递增版本号**
-  （帧藏X 靠版本号让旧解析缓存失效）。
+  （帧藏X 靠版本号让旧解析缓存失效）；本仓库索引表同步维护「更新日期」列，
+  失效规则 48 小时内升版修复或标注「已失效」，不得滞留可导入列表。
+- **规则作者署名**：`meta.author` / `manifest.author` 必填真实可追溯（昵称 / GitHub ID / 主页），
+  不得留空、写 `unknown` 或冒充他人与帧藏X 官方；第三方改编的规则在 `meta.description`
+  注明原作者与来源链接（署名与许可证义务）；`manifest.license` 默认 `SEE_LICENSE`。
 - **禁止脚本类操作符**：`eval`/`script`/`python`/`shell` 等在编译期即被拒绝——引擎是声明式
   Recipe，不执行任何代码；把逻辑拆成 `http.request` + `extract.*` + `transform.*` 步骤。
 - **能力如实**：用到网络/JSON 解析的步骤，规则头部 `capabilities` 声明（引擎会自动并集，
@@ -84,24 +89,45 @@
 - **`supportedPlatforms`**（规则包）：填写规则实际覆盖的站点标识，
   与 `matcher` 保持一致（应用在规则中心展示给用户）。
 
-### 3. 作者要素
+### 3. 发布者要素（**视频的发布者**，用于媒体库展示）
 
-- **`meta.author` / `manifest.author` 必填且真实可追溯**：写你的昵称、GitHub ID 或主页——
-  用户要在规则中心看到"这是谁写的"并决定是否信任；**不得**留空、写 `unknown`、
-  或冒充他人与帧藏X 官方。
-- 第三方改编的规则，在 `meta.description` 注明**原作者与来源链接**（署名与许可证义务）。
-- `manifest.license`：默认 `SEE_LICENSE`；有明确许可证的按原样标注。
-- 提交者身份：PR 提交的仓库/账号应与 `author` 字段对应（或在 PR 说明中说明代发布关系）。
+> 注意：本节的「发布者」指规则**解析到的视频的作者/UP 主/昵称**，
+> 不是规则作者（规则作者的要求见第 1 节「规则作者署名」）。
 
-### 4. 日期要素
+- **规则必须提取视频发布者**并经 `output.metadata key=author` 输出：
 
-- **版本即日期载体**：每次内容变更**必须**递增 `version`/`moduleVersion`（三段数字），
-  不允许"改内容不改版本"（会导致用户端缓存与回滚失效）。
-- **索引登记更新日期**：README 的预置规则表必须维护「更新日期」列（`YYYY-MM-DD`），
-  与本次提交日期一致。
-- **失效标注**：发现平台改版导致规则失效，**48 小时内在本仓库**升版本修复，
-  或在索引表标注「已失效 · MM-DD」并将失效规则移到文末归档区——
-  不允许让失效规则继续留在可导入列表顶部。
+  ```jsonc
+  { "kind": "extract.jsonPath", "input": "$step.2", "path": "$.data.author.nickname" },
+  { "kind": "output.metadata", "key": "author", "value": "$step.N" }
+  ```
+
+  该值会随任务进入媒体库，在条目信息行展示为 `发布者 · 平台 · 发布日期`；
+  缺这一步，媒体库该条目将**没有发布者**。
+- **字段路径以目标站点真实字段为准**（接口返回或页面嵌入 JSON 里的昵称/用户名），
+  提交前用规则调试台验证取值非空；帧藏X 示例参考：
+  小红书为 `$.noteData.data.noteData.user.nickName`。
+- **不得伪造**：发布者必须来自站点数据，禁止硬编码他人昵称或写规则作者的名字顶替。
+- 站点确实不提供发布者字段时，可在 `meta.description` 注明「该站点无发布者字段」，
+  此时省略该输出（媒体库留空，不报错）。
+
+### 4. 日期要素（**视频的上传/发布时间**，用于媒体库展示）
+
+> 注意：本节的「时间」指规则**解析到的视频的发布时间**，
+> 不是规则的版本日期（版本与索引日期的要求见第 1 节）。
+
+- **规则必须提取视频上传/发布时间**并经 `output.metadata key=publishAt` 输出：
+
+  ```jsonc
+  { "kind": "extract.jsonPath", "input": "$step.2", "path": "$.data.video.publishTime" },
+  { "kind": "output.metadata", "key": "publishAt", "value": "$step.N" }
+  ```
+
+  **值为 epoch 毫秒**；若站点给的是秒（小于 1e11），帧藏X 会自动换算为毫秒。
+  该值会随任务进入媒体库，在条目信息行展示发布日期。
+- **常见来源**：接口的 `publish_time` / `create_time` 字段、页面嵌入 JSON 的 `time` 字段；
+  帧藏X 示例参考：小红书为 `$.noteData.data.noteData.time`（本就是毫秒）。
+- 提交前用规则调试台确认取值是数字且量级正确（13 位是毫秒、10 位是秒）。
+- **不得写入错误时间**：取不到时省略该输出（媒体库不显示日期），禁止用当前时间或猜值填充。
 
 ---
 

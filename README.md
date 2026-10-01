@@ -37,7 +37,7 @@
 
 | 模板 | 用途 | 链接（raw） |
 |------|------|------------|
-| 最小单文件模板 | 从零改出一条可运行规则（改 matcher / 接口地址 / 字段路径三处） | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/templates/minimal.recipe.json` |
+| 最小单文件模板 | 从零改出一条可运行规则（改 matcher / 接口地址 / 直链字段 / 发布者与时间字段四处） | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/templates/minimal.recipe.json` |
 | 完整规则包模板 | manifest + rules/ 目录形态（可回滚、可启停的正规发布形态） | 目录见 [templates/full-package/](./templates/full-package)，下载两个文件后在规则中心「从文件导入」多选 |
 
 ## 语法示例（最常用能力）
@@ -72,15 +72,19 @@
 ## 注意事项（收录本市场的要素要求，不满足不予收录）
 
 - **规则**：必须是 `zhencangx.recipe` 2.0 或 `.zrule` 包且能通过导入校验链（附调试台命中说明）；
-  `meta.id` 全局唯一；**内容变更必须递增三段版本号**（用户端缓存与回滚依赖它）；
+  `meta.id` 全局唯一；**内容变更必须递增三段版本号**（用户端缓存与回滚依赖它），索引表同步维护
+  「更新日期」、失效规则 48 小时内升版或标注；`meta.author`/`manifest.author` 必填真实可追溯
+  （规则作者署名，禁止留空或冒充），改编规则署名原作者与来源；
   禁止脚本类操作符（引擎不执行代码）；受限内容必须 `restricted.mark` 如实上报；
   凭据类请求头（Cookie/Authorization）须在描述中明示（用户启用时会弹窗授权）。
 - **平台**：`matcher` 明确锚定实际覆盖的域名与路径，不得宽匹配；`moduleId` 禁止 `official.`
   前缀、不得冒充官方；不做登录/会员/DRM 绕过（引擎也无此能力）。
-- **作者**：`meta.author` / `manifest.author` 必填真实可追溯（昵称/GitHub ID/主页），
-  禁止留空、`unknown` 或冒充他人；改编规则须署名原作者与来源。
-- **日期**：内容变更必升版本号；本仓库索引表同步维护「更新日期」列（YYYY-MM-DD）；
-  失效规则 48 小时内升版修复或标注「已失效」，不得滞留可导入列表。
+- **发布者（视频）**：规则须提取**视频的发布者**（站点的昵称/用户名字段）并经
+  `output.metadata key=author` 输出——该值展示在媒体库条目信息行（`发布者 · 平台 · 发布日期`），
+  缺这步媒体库就没有发布者；字段必须来自站点数据，禁止伪造。
+- **时间（视频上传时间）**：规则须提取**视频的上传/发布时间**并经
+  `output.metadata key=publishAt` 输出（epoch 毫秒，站点给秒会自动换算）——该值展示在媒体库的
+  发布日期；取不到就省略该输出，禁止写入错误时间。
 
 > 完整细则与提交验收口径见 [RULE_GUIDE.md](./RULE_GUIDE.md)。
 

@@ -62,6 +62,26 @@
       "kind": "output.metadata",
       "key": "title",
       "value": "$var.videoId"
+    },
+    {
+      "kind": "extract.jsonPath",
+      "input": "$step.2",
+      "path": "$.data.author.name"
+    },
+    {
+      "kind": "output.metadata",
+      "key": "author",
+      "value": "$step.6"
+    },
+    {
+      "kind": "extract.jsonPath",
+      "input": "$step.2",
+      "path": "$.data.video.publishTime"
+    },
+    {
+      "kind": "output.metadata",
+      "key": "publishAt",
+      "value": "$step.8"
     }
   ]
 }

@@ -132,6 +132,26 @@
           "value": "1"
         }
       ]
+    },
+    {
+      "kind": "extract.jsonPath",
+      "input": "$step.2",
+      "path": "$.data.author.name"
+    },
+    {
+      "kind": "output.metadata",
+      "key": "author",
+      "value": "$step.10"
+    },
+    {
+      "kind": "extract.jsonPath",
+      "input": "$step.2",
+      "path": "$.data.video.publishTime"
+    },
+    {
+      "kind": "output.metadata",
+      "key": "publishAt",
+      "value": "$step.12"
     }
   ]
 }
