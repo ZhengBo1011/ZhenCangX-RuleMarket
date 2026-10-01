@@ -185,14 +185,15 @@ URL 与 headers 支持引用与模板插值；**请求体不支持**（写进去
   "label": "抖音解析服务 API Key",        // 授权界面展示名
   "header": "X-API-Key",                // 注入的请求头名（缺省 Cookie）
   "hosts": ["api.douyin.wtf"],          // 允许注入的域名（必填；不得含通配符/协议/端口/路径）
-  "hint": "在服务控制台创建后粘贴"          // 填写指引
+  "hint": "在服务控制台创建后粘贴",        // 填写指引
+  "loginUrl": "https://example.com/login" // 可选：声明后界面出现「通过网页登录获取」入口
 }
 ```
 
 要点：
 
 - **必须同时声明 `auth_reference` 能力**，否则编译期拒绝；
-- 声明 `label` / `header` / `hint` 却**不声明 `hosts`** 会被编译期拒绝
+- 声明 `label` / `header` / `hint` / `loginUrl` 却**不声明 `hosts`** 会被编译期拒绝
   （不允许"以为约束生效了其实没有"）；
 - 用 `header` 指向自己的域名不生效——凭据只会发往 `hosts` 里列出的域名
   （精确或子域后缀），指向别处一律不注入；所以 `hosts` 要列全（含自建服务域名）；
@@ -201,6 +202,34 @@ URL 与 headers 支持引用与模板插值；**请求体不支持**（写进去
 - 本机/局域网地址（`127.0.0.1`、`localhost`、`192.168.*`、`10.*` 等）默认被网络策略拒绝，
   规则指向它们时，用户需要在规则中心开启「访问本机与局域网」授权——
   规则描述里请写明这一点（参考 `rules/douyin-local.recipe.json`）。
+
+### 让用户「登录一下就能用」：`auth.loginUrl`
+
+需要**用户登录态 Cookie**的站点，额外声明 `loginUrl`（必须 https）：
+
+```jsonc
+"auth": {
+  "profile": "mysite-login", "label": "某站点登录态", "header": "Cookie",
+  "hosts": ["www.mysite.com", "api.mysite.com"],
+  "loginUrl": "https://www.mysite.com/login",
+  "hint": "点「通过网页登录获取」登录后自动保存"
+}
+```
+
+用户在规则中心的凭据卡片上会同时看到两种方式：
+
+| 方式 | 适用 |
+|---|---|
+| **通过网页登录获取** | 用户在内嵌网页里正常登录自己的账号，应用从 `hosts` 声明的域取 Cookie 存为该档案的值（可取多个域合并去重）。**推荐**：不必让用户手工拼 Cookie 串 |
+| 手工粘贴 | 用户从浏览器复制 Cookie / API Key 粘贴（API Key 类档案只能走这条） |
+
+两条路存的都是同一个档案值，加密保存在本机，规则读不到；登录页只用于取 Cookie，
+凭据**不会**因为登录而发往声明域名之外的任何站点。
+
+> ⚠️ **不是所有站点都能靠 Cookie 拿到数据**。很多平台（如抖音）还要请求签名
+> （`a_bogus` 等），单有 Cookie 依然会被拒。这种站点请走「服务型规则」——
+> 把签名交给服务，规则只负责调接口（见 `rules/douyin.recipe.json`）。
+> 应用内「示例⑥ Cookie 登录型规则」演示了本节的写法。
 
 ---
 

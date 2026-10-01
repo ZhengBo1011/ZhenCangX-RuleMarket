@@ -149,10 +149,11 @@ function checkAuth(file, auth) {
   if (typeof profile !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,63}$/.test(profile)) {
     fail(file, `auth.profile 非法（只允许小写字母/数字/._-，首字符为字母或数字）：${JSON.stringify(profile)}`);
   }
-  const hasExtras = ['label', 'header', 'hint'].some((k) => auth[k] !== undefined);
+  const hasExtras = ['label', 'header', 'hint', 'loginUrl'].some((k) => auth[k] !== undefined);
   const hasHosts = Array.isArray(auth.hosts) && auth.hosts.length > 0;
   if (hasExtras && !hasHosts) {
-    fail(file, 'auth 声明了 label/header/hint 却没有 hosts —— 引擎会编译期拒绝（允许域名是凭据注入的唯一约束）');
+    fail(file, 'auth 声明了 label/header/hint/loginUrl 却没有 hosts —— 引擎会编译期拒绝'
+      + '（允许域名是凭据注入的唯一约束）');
   }
   if (auth.header !== undefined) {
     if (typeof auth.header !== 'string' || !/^[A-Za-z0-9!#$%&'*+\-.^_`|~]{1,64}$/.test(auth.header)) {
@@ -166,6 +167,16 @@ function checkAuth(file, auth) {
       if (typeof host !== 'string' || host.includes('*') || /[:/@\s]/.test(host)) {
         fail(file, `auth.hosts 含非法域名（不得含通配符/端口/路径）：${JSON.stringify(host)}`);
       }
+    }
+  }
+  // 登录页地址（可选）：声明后规则详情页会出现「通过网页登录获取」入口，必须是 https 绝对地址
+  if (auth.loginUrl !== undefined) {
+    if (typeof auth.loginUrl !== 'string'
+      || !/^https:\/\/[a-z0-9][a-z0-9.-]*/i.test(auth.loginUrl)) {
+      fail(file, `auth.loginUrl 必须是 https 绝对地址（登录页会放入内嵌 Web）：${JSON.stringify(auth.loginUrl)}`);
+    }
+    if (!hasHosts) {
+      fail(file, 'auth.loginUrl 必须与 auth.hosts 同时声明（取 Cookie 的域来自 hosts）');
     }
   }
 }
