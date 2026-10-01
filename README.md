@@ -25,14 +25,6 @@
 |------|------|----------------|---------|
 | 小红书视频笔记解析 | 分享短链 `xhslink.cn` / 网页直链均可；提取直链、作者、发布时间，携带防盗链头下载；仅视频笔记 | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/xiaohongshu.recipe.json` | 2026-10-01 |
 
-
-### 第三方 · 可直接导入
-
-| 内容 | 导入链接 | 说明 | 更新日期 |
-|------|---------|------|---------|
-| yt-dlp 小红书提取器源码（gist） | `https://gist.githubusercontent.com/ZhengBo1011/95732bbed48d43268d0ecdd497d97dd2/raw/4a6129ba6ac5216191c073c8ac651b6f204a411b/xhs_ytdlp.py` | 粘贴该链接导入 → 自动生成「URL 匹配就绪、步骤待补齐」的脚手架规则（可安装、调试台可验证匹配） | 2026-10-01 |
-| 最小规则示例（gist） | `https://gist.githubusercontent.com/ZhengBo1011/370755febf00806c6033df4f02a36ae6/raw/52665d42babd338daa24361ed4e072538add86bf/rule_sample_01_minimal.json` | 网络导入通道测试用，内容同本仓库示例① | 2026-10-01 |
-
 ---
 
 # 🛠 面向开发者
