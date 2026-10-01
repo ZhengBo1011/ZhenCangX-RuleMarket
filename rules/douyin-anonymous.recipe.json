@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "2.0",
+  "format": "zhencangx.recipe",
+  "meta": {
+    "id": "com.zhencangx.douyin.anonymous",
+    "name": "抖音视频解析（匿名降级说明）",
+    "author": "帧藏X 官方规则",
+    "version": "1.0.0",
+    "description": "抖音链接的**诚实降级**规则：不发起任何网络请求，只如实上报「为什么端侧匿名解析不了」以及该怎么办。规则作者：帧藏X 官方。适用场景：你不想或暂时无法配置解析服务 API Key，但希望抖音链接被识别后有明确解释，而不是一句「不支持的平台」。事实依据（2026-10 端侧实测）：短链 v.douyin.com 仍可 302 展开；但分享页 window._ROUTER_DATA 已不再包含 videoInfoRes/play_addr，web 详情接口返回 403 ArgusSecurityPlugin，旧 iteminfo 接口返回空响应体，爬虫 UA 亦无效——抖音已把数据下发移到 a_bogus 签名与客户端指纹之后，纯声明式规则无法生成签名。请改用「抖音视频解析（解析服务）」规则（需 API Key）或 douyin-local 规则（本机自建服务）。本规则与那两条规则是**并列模块**，同时启用时本规则优先级最低，不会抢占正常解析。"
+  },
+  "matcher": {
+    "hosts": [
+      "v.douyin.com",
+      "douyin.com",
+      "iesdouyin.com"
+    ],
+    "urlPatterns": [
+      "douyin\\.com/video/\\d+",
+      "douyin\\.com/(?!(?:discover|user|search|following|recommend)(?:/|$))[A-Za-z0-9_-]{5,}",
+      "iesdouyin\\.com/share/(?:video|note)/\\d+"
+    ],
+    "priority": 5
+  },
+  "capabilities": [],
+  "steps": [
+    {
+      "kind": "restricted.mark",
+      "reason": "端侧匿名解析不可用",
+      "message": "抖音已启用 a_bogus 签名与 Argus 风控：分享页不再下发视频数据、详情接口返回 403，端侧匿名声明式规则无法解析。解决办法二选一：① 导入「抖音视频解析（解析服务）」规则，并在规则中心为该模块填写解析服务 API Key；② 导入「抖音视频解析（本机服务）」规则，在本机/局域网部署解析服务后启用内网访问授权。"
+    }
+  ]
+}

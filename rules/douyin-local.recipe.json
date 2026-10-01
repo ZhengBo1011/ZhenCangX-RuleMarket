@@ -1,0 +1,202 @@
+{
+  "schemaVersion": "2.0",
+  "format": "zhencangx.recipe",
+  "meta": {
+    "id": "com.zhencangx.douyin.local",
+    "name": "抖音视频解析（本机服务）",
+    "author": "帧藏X 官方规则",
+    "version": "1.0.0",
+    "description": "抖音视频无水印解析（指向你在本机/局域网自建的解析服务，默认 http://127.0.0.1:8080）。规则作者：帧藏X 官方。与「解析服务」规则结构相同，区别有二：① 服务地址是本机/内网地址——本模块需要你在规则中心开启「访问本机与局域网」授权，未授权时请求会被网络策略拒绝（fail-closed）；② 不声明凭据档案（自建实例通常无需 API Key），若你的实例开了鉴权，请在 http.request 的 headers 里自行加入对应请求头，并在启用时同意「携带凭据头」。为什么必须经解析服务：抖音已启用 a_bogus 签名 + Argus 风控，端侧纯声明式规则拿不到视频数据（2026-10 实测分享页与接口均无数据）。本机部署可参考 Evil0ctal/Douyin_TikTok_Download_API（docker 起一个即可，接口形如 /api/v1/douyin/video?aweme_id=...）。注意：抖音域名下的非视频链接（用户主页 / 发现页）也会命中本规则，此时规则会如实上报「不是视频分享链接」而不是报错。"
+  },
+  "matcher": {
+    "hosts": [
+      "v.douyin.com",
+      "douyin.com",
+      "iesdouyin.com"
+    ],
+    "urlPatterns": [
+      "douyin\\.com/video/\\d+",
+      "douyin\\.com/(?!(?:discover|user|search|following|recommend)(?:/|$))[A-Za-z0-9_-]{5,}",
+      "iesdouyin\\.com/share/(?:video|note)/\\d+"
+    ],
+    "priority": 25
+  },
+  "capabilities": [
+    "network",
+    "json_parse",
+    "media_resolve",
+    "redirect"
+  ],
+  "variables": [
+    {
+      "name": "ua",
+      "value": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+    },
+    {
+      "name": "referer",
+      "value": "https://www.douyin.com/"
+    },
+    {
+      "name": "awemeId",
+      "value": ""
+    }
+  ],
+  "steps": [
+    {
+      "kind": "http.resolve",
+      "url": "$input.url",
+      "headers": {
+        "User-Agent": "$var.ua"
+      },
+      "timeoutMs": 15000
+    },
+    {
+      "kind": "extract.regex",
+      "input": "$step.0",
+      "pattern": "/(?:video|note)/(\\d{6,})",
+      "group": 1,
+      "all": false
+    },
+    {
+      "kind": "variable.set",
+      "name": "awemeId",
+      "value": "$step.1"
+    },
+    {
+      "kind": "condition.exists",
+      "left": "$step.1"
+    },
+    {
+      "kind": "control.branch",
+      "condition": "$step.3",
+      "then": [
+        {
+          "kind": "http.request",
+          "method": "GET",
+          "url": "http://127.0.0.1:8080/api/v1/douyin/video?aweme_id=${var.awemeId}&wait=25&include_raw=true",
+          "headers": {
+            "User-Agent": "$var.ua",
+            "Accept": "application/json"
+          },
+          "timeoutMs": 45000
+        },
+        {
+          "kind": "extract.jsonPath",
+          "input": "$step.0",
+          "path": "$.data.kind"
+        },
+        {
+          "kind": "variable.set",
+          "name": "kind",
+          "value": "$step.1"
+        },
+        {
+          "kind": "extract.jsonPath",
+          "input": "$step.0",
+          "path": "$.data.media.video.url"
+        },
+        {
+          "kind": "variable.set",
+          "name": "mediaUrl",
+          "value": "$step.3"
+        },
+        {
+          "kind": "extract.jsonPath",
+          "input": "$step.0",
+          "path": "$.data.title"
+        },
+        {
+          "kind": "variable.set",
+          "name": "mediaTitle",
+          "value": "$step.5"
+        },
+        {
+          "kind": "extract.jsonPath",
+          "input": "$step.0",
+          "path": "$.data.author.nickname"
+        },
+        {
+          "kind": "variable.set",
+          "name": "mediaAuthor",
+          "value": "$step.7"
+        },
+        {
+          "kind": "extract.jsonPath",
+          "input": "$step.0",
+          "path": "$.data.raw.create_time"
+        },
+        {
+          "kind": "variable.set",
+          "name": "mediaAt",
+          "value": "$step.9"
+        },
+        {
+          "kind": "extract.jsonPath",
+          "input": "$step.0",
+          "path": "$.data.media.covers[0].url"
+        },
+        {
+          "kind": "variable.set",
+          "name": "mediaCover",
+          "value": "$step.11"
+        },
+        {
+          "kind": "condition.equals",
+          "left": "$var.kind",
+          "right": "video"
+        },
+        {
+          "kind": "control.branch",
+          "condition": "$step.13",
+          "then": [
+            {
+              "kind": "output.media",
+              "url": "$var.mediaUrl",
+              "mimeType": "video/mp4",
+              "extension": "mp4",
+              "title": "$var.mediaTitle",
+              "headers": {
+                "Referer": "$var.referer",
+                "User-Agent": "$var.ua"
+              }
+            },
+            {
+              "kind": "output.metadata",
+              "key": "title",
+              "value": "$var.mediaTitle"
+            },
+            {
+              "kind": "output.metadata",
+              "key": "author",
+              "value": "$var.mediaAuthor"
+            },
+            {
+              "kind": "output.metadata",
+              "key": "publishAt",
+              "value": "$var.mediaAt"
+            },
+            {
+              "kind": "output.metadata",
+              "key": "coverUrl",
+              "value": "$var.mediaCover"
+            }
+          ],
+          "else": [
+            {
+              "kind": "restricted.mark",
+              "reason": "非视频内容或本机服务未返回结果",
+              "message": "未取得抖音视频信息：该链接可能指向图文/图集内容，或本机服务未启动、端口/路径与本规则不一致。请确认本机解析服务已运行并监听 127.0.0.1:8080。"
+            }
+          ]
+        }
+      ],
+      "else": [
+        {
+          "kind": "restricted.mark",
+          "reason": "不是抖音视频分享链接",
+          "message": "该链接未解析出抖音视频 ID：可能指向用户主页、发现页或直播间，而不是单个视频。请使用抖音 App 的「分享 → 复制链接」得到的链接重试。"
+        }
+      ]
+    }
+  ]
+}

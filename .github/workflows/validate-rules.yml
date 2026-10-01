@@ -1,0 +1,47 @@
+name: validate-rules
+
+# 目的：把 RULE_GUIDE.md 第四节的「收录要素要求」从人工承诺变成机器闸门。
+# 只做**结构**校验，不能替代真机调试台验证 —— PR 仍需附调试台命中的证据。
+on:
+  push:
+    paths:
+      - 'rules/**'
+      - 'tools/validate-rules.mjs'
+      - '.github/workflows/validate-rules.yml'
+  pull_request:
+    paths:
+      - 'rules/**'
+      - 'tools/validate-rules.mjs'
+      - '.github/workflows/validate-rules.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate rules/*
+        run: node tools/validate-rules.mjs rules
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### 规则校验"
+            echo ""
+            echo '```'
+            node tools/validate-rules.mjs rules 2>&1 || true
+            echo '```'
+            echo ""
+            echo "> 结构校验通过 ≠ 规则可用。收录前仍需提交者附规则调试台的命中证据。"
+          } >> "$GITHUB_STEP_SUMMARY"
