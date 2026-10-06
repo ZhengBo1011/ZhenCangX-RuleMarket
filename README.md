@@ -28,6 +28,7 @@
 | **抖音视频解析（解析服务）** | **主推**。短链展开 → 调解析服务 → 输出**无水印**直链 + 标题 / 发布者 / 发布时间 / 封面 | **是**（解析服务 API Key，自定义档案 `douyin-service`） | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/douyin.recipe.json` | 2026-10-01 |
 | 抖音视频解析（本机服务） | 指向你在本机/局域网自建的服务（默认 `127.0.0.1:8080`），需在规则中心开启「访问本机与局域网」授权 | 否（自建实例若开鉴权需自行加头） | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/douyin-local.recipe.json` | 2026-10-01 |
 | 抖音视频解析（匿名降级说明） | 不触网，仅如实说明「为什么匿名解析不了」及解决办法。适合暂时不想配密钥的用户 | 否 | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/douyin-anonymous.recipe.json` | 2026-10-01 |
+| X（推特）无登录解析（社区规则） | 全程匿名不登录：guest 访客令牌 + 公开 GraphQL 主通道，FxTwitter 公开镜像备通道；公开推文多码率 mp4 直链 + 标题 / 作者 / 封面 / 日期。敏感、受保护等仅登录可见内容会如实上报受限 | 否（启用时需同意「携带凭据头」——发送的 `Authorization` / `x-guest-token` 均为 X 网页客户端公开常量，非个人凭据） | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/x-nologin-rule-package.zrule` | 2026-10-06 |
 
 ### 关于抖音：为什么必须经解析服务？
 
@@ -47,6 +48,26 @@
 > ⚠️ 「解析服务」规则默认指向公共实例 `https://api.douyin.wtf`（**第三方服务**）。
 > 你的链接会经该服务解析，请自行评估信任与隐私；在意隐私请改用「本机服务」规则。
 > 本机自建可参考 [Evil0ctal/Douyin_TikTok_Download_API](https://github.com/Evil0ctal/Douyin_TikTok_Download_API)（docker 起一个即可）。
+
+### 关于 X（推特）无登录解析：能做什么、不能做什么
+
+**适用人群**：X 账号被平台限制登录、无法在应用内登录，但仍想下载自己**本来就能看到的公开视频**的用户。
+这正是帧藏X 内置 X 解析的匿名通道之外的一条**社区兜底**（规则由社区维护，与帧藏X 官方开发无关）。
+
+**两条通道，都只走平台/社区对匿名访客开放的公开出口**（实现思路与 [yt-dlp](https://github.com/yt-dlp/yt-dlp)、
+[FxTwitter](https://github.com/FxEmbed/FxEmbed) 等开源项目一致，感谢这些维护者）：
+
+1. **主通道 · X 公开 GraphQL**：公开 Web Bearer 换取临时访客令牌 → `TweetResultByRestId`，
+   提取推文全部 mp4 变体直链（多码率）+ 标题 / 作者 / 封面；
+2. **备通道 · FxTwitter 公开镜像**：主通道未取得视频时自动改走 `api.fxtwitter.com`（第三方公共实例，
+   限流 1000 次/分/IP，可自托管后改规则里的域名），并补充发布时间。
+
+**边界（如实说明）**：只覆盖**公开推文**。敏感（NSFW）、受保护、仅登录可见的内容，匿名通道本就拿不到
+——规则会如实上报受限原因，不会伪装成失败或绕过任何访问控制。已删除推文与纯图文推文会得到明确提示。
+
+**维护**：X 前端发版可能更换 GraphQL 的 `queryId`。失效时**改规则文件即可修复，无需升级 App**：
+从 X 网页版开发者工具的请求里取最新 queryId，更新规则 `variables.queryId` 后重新导入（或提 PR 升版本号）。
+
 
 ## 📎 社区共享文档
 
