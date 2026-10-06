@@ -28,7 +28,7 @@
 | **抖音视频解析（解析服务）** | **主推**。短链展开 → 调解析服务 → 输出**无水印**直链 + 标题 / 发布者 / 发布时间 / 封面 | **是**（解析服务 API Key，自定义档案 `douyin-service`） | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/douyin.recipe.json` | 2026-10-01 |
 | 抖音视频解析（本机服务） | 指向你在本机/局域网自建的服务（默认 `127.0.0.1:8080`），需在规则中心开启「访问本机与局域网」授权 | 否（自建实例若开鉴权需自行加头） | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/douyin-local.recipe.json` | 2026-10-01 |
 | 抖音视频解析（匿名降级说明） | 不触网，仅如实说明「为什么匿名解析不了」及解决办法。适合暂时不想配密钥的用户 | 否 | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/douyin-anonymous.recipe.json` | 2026-10-01 |
-| X（推特）无登录解析（社区规则） | 全程匿名不登录：guest 访客令牌 + 公开 GraphQL 主通道，FxTwitter 公开镜像备通道；公开推文多码率 mp4 直链 + 标题 / 作者 / 封面 / 日期。敏感、受保护等仅登录可见内容会如实上报受限 | 否（启用时需同意「携带凭据头」——发送的 `Authorization` / `x-guest-token` 均为 X 网页客户端公开常量，非个人凭据） | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/x-nologin-rule-package.zrule` | 2026-10-06 |
+| X（推特）无登录解析（社区规则） | 全程匿名不登录：guest 访客令牌 + 公开 GraphQL 主通道，FxTwitter 公开镜像备通道；逐变体多码率 mp4 直链并标注**分辨率 / 码率 / 编码**（H.264 等，媒体库档位排序生效）+ 标题 / 作者 / 封面 / 发布日期（双通道取值）。敏感、受保护等仅登录可见内容会如实上报受限。需帧藏X 1.5.x 及以上（档位信息依赖 `output.media` 扩展字段） | 否（启用时需同意「携带凭据头」——发送的 `Authorization` / `x-guest-token` 均为 X 网页客户端公开常量，非个人凭据） | `https://raw.githubusercontent.com/ZhengBo1011/ZhenCangX-RuleMarket/main/rules/x-nologin-rule-package.zrule` | 2026-10-06 |
 
 ### 关于抖音：为什么必须经解析服务？
 
@@ -58,9 +58,13 @@
 [FxTwitter](https://github.com/FxEmbed/FxEmbed) 等开源项目一致，感谢这些维护者）：
 
 1. **主通道 · X 公开 GraphQL**：公开 Web Bearer 换取临时访客令牌 → `TweetResultByRestId`，
-   提取推文全部 mp4 变体直链（多码率）+ 标题 / 作者 / 封面；
+   逐变体提取推文全部 mp4 直链及其**分辨率 / 码率 / 编码**（媒体库显示 `H.264 · 2.1 Mbps · 1280×720`
+   这类档位信息并参与排序）+ 标题 / 作者 / 封面 / 发布时间；
 2. **备通道 · FxTwitter 公开镜像**：主通道未取得视频时自动改走 `api.fxtwitter.com`（第三方公共实例，
-   限流 1000 次/分/IP，可自托管后改规则里的域名），并补充发布时间。
+   限流 1000 次/分/IP，可自托管后改规则里的域名），宽高与发布时间（秒级时间戳）同样齐备。
+
+两条通道都会输出发布时间（GraphQL 的 `created_at` 日期串由引擎自动换算），媒体库信息行完整展示
+「发布者 · 平台 · 发布日期」。档位信息依赖帧藏X 1.5.x 的 `output.media` 扩展字段。
 
 **边界（如实说明）**：只覆盖**公开推文**。敏感（NSFW）、受保护、仅登录可见的内容，匿名通道本就拿不到
 ——规则会如实上报受限原因，不会伪装成失败或绕过任何访问控制。已删除推文与纯图文推文会得到明确提示。
